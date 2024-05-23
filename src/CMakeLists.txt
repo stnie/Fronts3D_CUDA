@@ -1,0 +1,11 @@
+cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
+
+
+add_library(cufronts_library INTERFACE)
+
+add_subdirectory(IO)
+add_subdirectory(types)
+add_subdirectory(processing)
+target_link_libraries(cufronts_library INTERFACE processing_library)
+target_link_libraries(cufronts_library INTERFACE IO_library_interface)
+target_link_libraries(cufronts_library INTERFACE types_library_interface)

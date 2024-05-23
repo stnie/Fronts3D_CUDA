@@ -1,0 +1,98 @@
+Bootstrap: docker
+From: nvcr.io/nvidia/nvhpc:23.11-devel-cuda_multi-ubuntu22.04
+
+%files
+   ../apps  /opt/FrontSoftware/cufronts/apps
+   ../docs  /opt/FrontSoftware/cufronts/docs
+   ../include  /opt/FrontSoftware/cufronts/include
+   ../src  /opt/FrontSoftware/cufronts/src
+   ../scripts  /opt/FrontSoftware/cufronts/scripts
+   ../CMakeLists.txt  /opt/FrontSoftware/cufronts/CMakeLists.txt
+   ../config.cuh.in  /opt/FrontSoftware/cufronts/config.cuh.in
+   ../LICENSE  /opt/FrontSoftware/cufronts/LICENSE
+   ../README.md  /opt/FrontSoftware/cufronts/README.md
+
+
+%environment
+    # Point to OMPI binaries, libraries, man pages
+    export OMPI_DIR=/opt/ompi
+    export PATH="$OMPI_DIR/bin:$PATH"
+    export LD_LIBRARY_PATH="$OMPI_DIR/lib:$LD_LIBRARY_PATH"
+    export MANPATH="$OMPI_DIR/share/man:$MANPATH"
+
+%post
+    echo "Installing required packages"
+    apt-get update
+    apt-get update
+    apt-get install -y wget
+    apt-get install -y gcc-12
+    apt-get install -y g++-12
+    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 1
+    update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 1
+    apt-get install -y python3-pip
+    
+    echo "Preparing python environment"
+    pip install numpy
+    pip install plotly
+    pip install pandas
+    pip install kaleido
+
+
+    echo "Installing libnetcdf, libssl, tzdata"
+    apt-get install -y libssl-dev
+    DEBIAN_FRONTEND=noninteractive apt-get -y install tzdata
+    apt-get install -y libnetcdf-c++4-dev
+    apt-get -y upgrade
+
+
+    echo "Installing Open MPI"
+    export OMPI_DIR=/opt/ompi
+    export OMPI_VERSION=4.0.1
+    export OMPI_URL="https://download.open-mpi.org/release/open-mpi/v4.0/openmpi-$OMPI_VERSION.tar.bz2"
+    mkdir -p /tmp/ompi
+    mkdir -p /opt
+    # Download
+    cd /tmp/ompi && wget -O openmpi-$OMPI_VERSION.tar.bz2 $OMPI_URL && tar -xjf openmpi-$OMPI_VERSION.tar.bz2
+    # Compile and install
+    cd /tmp/ompi/openmpi-$OMPI_VERSION && ./configure --prefix=$OMPI_DIR && make -j8 install
+
+    # Set env variables so we can compile our application
+    export PATH=$OMPI_DIR/bin:$PATH
+    export LD_LIBRARY_PATH=$OMPI_DIR/lib:$LD_LIBRARY_PATH
+
+    cmake --version
+    
+    mkdir /opt/FrontSoftware/cufronts/build
+    mkdir /opt/FrontSoftware/cufronts/outputs
+    mkdir /opt/FrontSoftware/cufronts/outputsMPI
+    cd /opt/FrontSoftware/cufronts/build
+
+    echo "Compiling Front Detection Code"
+    cmake ..
+    make -j 8
+
+    
+
+
+%runscript
+    cd /opt/FrontSoftware/cufronts/build
+    OUT_PATH=$3
+    MPI_VERSION=$4
+    RANDOM_OPT=$5
+    EXEC_PATH=./apps/CuFront
+    RAND_FLAG=""
+    if [ $MPI_VERSION -eq 1 ] 
+    then
+        EXEC_PATH=./apps/CuFrontMPI
+    fi
+    if [ $RANDOM_OPT -eq 1 ]
+    then
+        $EXEC_PATH $1 $2 --out-path $OUT_PATH  --background-file-identifier pl2016 --front-file-identifier fr2016 --write-netCDF --mean-width 5 --random-eval
+    else
+        $EXEC_PATH $1 $2 --out-path $OUT_PATH  --background-file-identifier pl2016 --front-file-identifier fr2016 --write-netCDF --mean-width 5
+    fi
+
+	
+
+	
+	

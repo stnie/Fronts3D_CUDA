@@ -1,0 +1,2 @@
+#define CuFront_VERSION_MAJOR @CuFront_VERSION_MAJOR@
+#define CuFront_VERSION_MINOR @CuFront_VERSION_MINOR@

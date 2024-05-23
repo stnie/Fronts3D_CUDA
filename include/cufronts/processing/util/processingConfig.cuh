@@ -1,0 +1,7 @@
+#pragma once
+#define INVALID_SCORE 10000000
+#define INVALID_DYN_SCORE 100000
+#define INVALID_COORDS val2<T>(-90,90)
+#define INVALID_OFFSET -1
+#define INVALID_ANGLE -10000
+#define INVALID_DATA -10000
